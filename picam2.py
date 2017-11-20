@@ -16,7 +16,9 @@ import smtplib
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEText import MIMEText
 from email.MIMEBase import MIMEBase
+from email.mime.image import MIMEImage
 from email import encoders
+import glob
 
 # Motion detection settings:
 # Threshold          - how much a pixel has to change by to be marked as "changed"
@@ -30,7 +32,7 @@ threshold = 10
 sensitivity = 20
 forceCapture = True
 forceCaptureTime = 60 * 60 # Once an hour
-filepath = "/home/pi/picam"
+filepath = "/home/pi/pispy"
 filenamePrefix = "capture"
 diskSpaceToReserve = 40 * 1024 * 1024 # Keep 40 mb free on disk
 cameraSettings = ""
@@ -91,7 +93,9 @@ def saveImage(settings, width, height, quality, diskSpaceToReserve):
 
 fromaddr = "piSpycameraa@gmail.com" #"YOUR EMAIL"
 toaddr = "piSpycameraa@gmail.com" #"EMAIL ADDRESS YOU SEND TO"
- 
+
+#Latest photo taken
+last = last_photo_taken = sorted(glob.glob("/home/pi/pispy/*.jpg"),key=os.path.getmtime)[-1]
 msg = MIMEMultipart()
  
 msg['From'] = fromaddr
@@ -102,18 +106,22 @@ body = "PiSpy has detected motion." #"TEXT YOU WANT TO SEND"
  
 msg.attach(MIMEText(body, 'plain'))
  
-fileName = filename.replace(filepath, '') #"NAME OF THE FILE WITH ITS EXTENSION"
-attachment = open(filepath, "rb") #"PATH OF THE FILE"
+#fileName = 'picam2.py'#"NAME OF THE FILE WITH ITS EXTENSION"
+#attachment = open("/home/pi/pispy/picam2.py", "rb") #"PATH OF THE FILE"
+with open(last, "rb") as fp:
+    img = MIMEIages(fp.read())
+    msg.attach(img)
+#part = MIMEBase('application', 'octet-stream')
+#part.set_payload((attachment).read())
+#encoders.encode_base64(part)
+#part.add_header('Content-Disposition', "attachment; filename= %s" % fileName)
  
-part = MIMEBase('application', 'octet-stream')
-part.set_payload((attachment).read())
-encoders.encode_base64(part)
-part.add_header('Content-Disposition', "attachment; filename= %s" % fileName)
- 
-msg.attach(part)
+#msg.attach(part)
  
 server = smtplib.SMTP('smtp.gmail.com', 587)
+server.ehlo()
 server.starttls()
+server.ehlo()
 server.login(fromaddr, "pi21Camm") #"YOUR PASSWORD"
 text = msg.as_string()
 server.sendmail(fromaddr, toaddr, text)
